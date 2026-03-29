@@ -79,3 +79,13 @@ export async function getNodes(
     return { view: "linear", nodes: [] };
   }
 }
+
+export async function sendMessage(
+  chatId: string,
+  body: { prompt: string; selectedNodeId: string | null }
+) {
+  return axios.post(`/chat/${chatId}/send`, {
+    prompt: body.prompt,
+    selected_node_id: body.selectedNodeId,
+  });
+}
