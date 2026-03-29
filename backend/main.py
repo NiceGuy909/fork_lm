@@ -1,17 +1,16 @@
-# forklm_project/backend/main.py
 import uuid
+from datetime import datetime, timezone
+from typing import Optional
+
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import text, func
-from backend.db import database, models
 from fastapi.middleware.cors import CORSMiddleware
-# , schemas
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+from backend.db import database, models
 
 app = FastAPI(title="Fork-LM Backend")
-
-# --- Dependency --- #
-
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,22 +21,92 @@ app.add_middleware(
 )
 
 def get_db():
-    db = next(database.get_session())  # gets Session from database.py
+    db = next(database.get_session())
     try:
         yield db
     finally:
         db.close()
 
+def utcnow():
+    return datetime.now(timezone.utc)
+
 def create_random_uuid():
     return str(uuid.uuid4())
 
-# --- API Endpoints --- #
-#fetch all chats for sidebar
+class SendBody(BaseModel):
+    prompt: str
+    selected_node_id: Optional[str] = None
+
+def call_llm(messages) -> str:
+    last_user = messages[-1]["content"] if messages else ""
+    return f"I received your prompt: {last_user}\n\nThis is a mock assistant reply from Fork-LM."
+
+def get_ancestor_chain(db: Session, chat_id: str, selected_node_id: str | None):
+    if not selected_node_id:
+        return []
+
+    selected = db.get(models.Node, selected_node_id)
+    if not selected or str(selected.chat_id) != str(chat_id):
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    path_parts = selected.path.strip("/").split("/")
+    ancestor_tokens = [int(t) for t in path_parts if t]
+
+    ancestors = (
+        db.query(models.Node)
+        .filter(
+            models.Node.chat_id == chat_id,
+            models.Node.token.in_(ancestor_tokens),
+        )
+        .order_by(models.Node.token)
+        .all()
+    )
+    return ancestors
+
+def build_branch_messages(db: Session, chat_id: str, selected_node_id: str | None):
+    chain = get_ancestor_chain(db, chat_id, selected_node_id)
+    msgs = []
+    for n in chain:
+        msgs.append({"role": "user", "content": n.prompt})
+        msgs.append({"role": "assistant", "content": n.response})
+    return msgs
+
+def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt: str, response: str):
+    parent = None
+    if selected_node_id:
+        parent = db.get(models.Node, selected_node_id)
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent node not found")
+
+    result = db.execute(
+        text("SELECT COALESCE(MAX(token), 0) FROM nodes WHERE chat_id = :chat_id"),
+        {"chat_id": chat_id},
+    )
+    max_token = result.scalar() or 0
+    new_token = max_token + 1
+
+    new_path = f"/{new_token}" if parent is None else f"{parent.path}/{new_token}"
+    depth = len([p for p in new_path.split("/") if p])
+
+    node = models.Node(
+        id=create_random_uuid(),
+        chat_id=chat_id,
+        user_id=1,
+        parent_id=parent.id if parent else None,
+        token=new_token,
+        path=new_path,
+        prompt=prompt,
+        response=response,
+        created_at=utcnow(),
+        depth=depth,
+    )
+    db.add(node)
+    db.commit()
+    db.refresh(node)
+    return node
+
 @app.get("/chats")
-def list_chats(
-    user_id: int = 1,  # dummy for MVP
-    db: Session = Depends(get_db),
-):
+def list_chats(user_id: int = 1, db: Session = Depends(get_db)):
     chats = db.query(models.Chat).filter(models.Chat.user_id == user_id).all()
     return [
         {
@@ -49,22 +118,16 @@ def list_chats(
         for chat in chats
     ]
 
-
 @app.post("/chats")
-def create_chat(
-    user_id: int = 1,  # dummy for MVP
-    title: str | None = None,
-    db: Session = Depends(get_db),
-):
+def create_chat(user_id: int = 1, title: str | None = None, db: Session = Depends(get_db)):
     chat = models.Chat(
-        id=database.create_random_uuid(),  # you’ll define this helper next
+        id=create_random_uuid(),
         user_id=user_id,
         title=title,
     )
     db.add(chat)
     db.commit()
     db.refresh(chat)
-
     return {
         "id": str(chat.id),
         "user_id": chat.user_id,
@@ -72,43 +135,30 @@ def create_chat(
         "created_at": chat.created_at,
     }
 
+@app.delete("/chats/{chat_id}")
+def delete_chat(chat_id: str, db: Session = Depends(get_db)):
+    chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    db.query(models.Node).filter(models.Node.chat_id == chat_id).delete()
+    db.query(models.Chat).filter(models.Chat.id == chat_id).delete()
+    db.commit()
+    return {"ok": True}
 
 @app.get("/chats/{chat_id}/nodes")
-def get_nodes(
-    chat_id: str,
-    selected_node_id: str | None = None,  # if present, return context (selected → root)
-    db: Session = Depends(get_db),
-):
-    # 1. Build query for all nodes in this chat
+def get_nodes(chat_id: str, selected_node_id: str | None = None, db: Session = Depends(get_db)):
     nodes_q = db.query(models.Node).filter(models.Node.chat_id == chat_id)
 
-    # 2. For chat view: ancestors of selected_node
     if selected_node_id:
-        selected = db.get(models.Node, selected_node_id)
-        if not selected:
-            raise HTTPException(status_code=404, detail="Node not found")
-
-        # tokenize and slice path: split "/0/1/3" → [0,1,3]
-        path_parts = selected.path.strip("/").split("/")
-        ancestor_tokens = [int(t) for t in path_parts]
-
-        # fetch ancestors ordered by token (root to selected)
-        ancestors = (
-            db.query(models.Node)
-            .filter(
-                models.Node.chat_id == chat_id,
-                models.Node.token.in_(ancestor_tokens),
-            )
-            .order_by(models.Node.token)
-            .all()
-        )
-
+        ancestors = get_ancestor_chain(db, chat_id, selected_node_id)
         return {
             "view": "linear",
             "nodes": [
                 {
                     "id": str(n.id),
                     "chat_id": str(n.chat_id),
+                    "parent_id": str(n.parent_id) if n.parent_id else None,
                     "token": n.token,
                     "path": n.path,
                     "prompt": n.prompt,
@@ -120,7 +170,6 @@ def get_nodes(
             ],
         }
 
-    # 3. For tree view: all nodes of the chat
     all_nodes = nodes_q.all()
     return {
         "view": "tree",
@@ -140,78 +189,23 @@ def get_nodes(
         ],
     }
 
-# --- 2. POST /chat → insert a node (MVP) --- #
-
-import httpx  # for LLM call; replace with your LLM client
-
-LLM_API_URL = "http://localhost:8001/v1/chat/completions"
-LLM_MODEL = "gpt-3.5-turbo"
-
-
-
-
-def call_llm(prompt: str) -> str:
-    # Mock: echo back a deterministic reply; remove when you plug in real LLM
-    return f"I received your prompt: {prompt}\n\nThis is a mock assistant reply from Fork-LM."
-
-
-@app.post("/chat")
-def handle_chat(
-    chat_id: str,
-    user_prompt: str,
-    selected_node_id: str | None = None,
-    db: Session = Depends(get_db),
-):
-    # 1. Get parent node (if any)
-    parent = None
-    if selected_node_id:
-        parent = db.get(models.Node, selected_node_id)
-        if not parent:
-            raise HTTPException(status_code=404, detail="Parent node not found")
-
-    # 2. Compute new token
-    result = db.execute(
-        text("SELECT COALESCE(MAX(token), 0) FROM nodes WHERE chat_id = :chat_id"),
-        {"chat_id": chat_id},
-    )
-    max_token_row = result.scalar() or 0
-    new_token = max_token_row + 1
-
-    # 3. Build path
-    if parent is None:
-        new_path = f"/{new_token}"
-    else:
-        new_path = f"{parent.path}/{new_token}"
-
-    # 4. LLM call + node creation (rest unchanged)
-    llm_reply = call_llm(user_prompt)
-
-    new_node = models.Node(
-        id=database.create_random_uuid(),
-        chat_id=chat_id,
-        user_id=1,
-        parent_id=parent.id if parent else None,
-        token=new_token,
-        path=new_path,
-        prompt=user_prompt,
-        response=llm_reply,
-        created_at=database.utcnow(),
-        depth=len(new_path.split("/")) - 1,
-    )
-
-    db.add(new_node)
-    db.commit()
-    db.refresh(new_node)
+@app.post("/chats/{chat_id}/send")
+def send_message(chat_id: str, body: SendBody, db: Session = Depends(get_db)):
+    messages = build_branch_messages(db, chat_id, body.selected_node_id)
+    messages.append({"role": "user", "content": body.prompt})
+    llm_text = call_llm(messages)
+    node = create_node(db, chat_id, body.selected_node_id, body.prompt, llm_text)
 
     return {
         "node": {
-            "id": str(new_node.id),
-            "chat_id": str(new_node.chat_id),
-            "token": new_node.token,
-            "path": new_node.path,
-            "prompt": new_node.prompt,
-            "response": new_node.response,
-            "created_at": new_node.created_at,
-            "depth": new_node.depth,
-        },
+            "id": str(node.id),
+            "chat_id": str(node.chat_id),
+            "parent_id": str(node.parent_id) if node.parent_id else None,
+            "token": node.token,
+            "path": node.path,
+            "prompt": node.prompt,
+            "response": node.response,
+            "created_at": node.created_at,
+            "depth": node.depth,
+        }
     }

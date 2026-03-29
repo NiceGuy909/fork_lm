@@ -1,91 +1,63 @@
-// src/api/chatApi.tsx
 import axios from "axios";
 
-const API_BASE_URL = "/api";
+export const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+});
 
-export interface Chat {
+export type Chat = {
   id: string;
   user_id: number;
-  title: string;
+  title: string | null;
   created_at: string;
-}
+};
 
-export interface Node {
+export type Node = {
   id: string;
   chat_id: string;
   parent_id: string | null;
-  prompt: string;
-  response: string;
   token: number;
   path: string;
+  prompt: string;
+  response: string;
+  created_at: string;
+  depth: number;
+};
+
+export type GetNodesResponse =
+  | { view: "linear"; nodes: Node[] }
+  | { view: "tree"; nodes: Node[] };
+
+export async function getChats() {
+  const res = await api.get<Chat[]>("/chats");
+  return res.data;
 }
 
-export interface NodesResponse {
-  view: "linear" | "tree";
-  nodes: Node[];
+export async function createChat(title?: string) {
+  const res = await api.post<Chat>("/chats", null, {
+    params: { title },
+  });
+  return res.data;
 }
 
-export async function getChats(): Promise<Chat[]> {
-  try {
-    console.log("Fetching chats from:", `${API_BASE_URL}/chats`);
-    const res = await axios.get(`${API_BASE_URL}/chats`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("Chats response:", res.data);
-    
-    // Handle both array response and wrapped response
-    if (Array.isArray(res.data)) {
-      return res.data;
-    } else if (res.data?.chats && Array.isArray(res.data.chats)) {
-      return res.data.chats;
-    } else if (res.data?.data && Array.isArray(res.data.data)) {
-      return res.data.data;
-    }
-    
-    console.warn("Unexpected response format:", res.data);
-    return [];
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      console.error("Axios error fetching chats:", {
-        status: err.response?.status,
-        message: err.message,
-        data: err.response?.data,
-        config: {
-          url: err.config?.url,
-          method: err.config?.method,
-        },
-      });
-    } else {
-      console.error("Error fetching chats:", err);
-    }
-    return [];
-  }
+export async function deleteChat(chatId: string) {
+  const res = await api.delete(`/chats/${chatId}`);
+  return res.data;
 }
 
-export async function getNodes(
-  chatId: string,
-  selectedNodeId: string | null
-): Promise<NodesResponse> {
-  try {
-    const params = selectedNodeId ? { node_id: selectedNodeId } : {};
-    const res = await axios.get(`${API_BASE_URL}/chats/${chatId}/nodes`, {
-      params,
-    });
-    return res.data;
-  } catch (err) {
-    console.error("Error fetching nodes:", err);
-    return { view: "linear", nodes: [] };
-  }
+export async function getNodes(chatId: string, selectedNodeId: string | null) {
+  const res = await api.get<GetNodesResponse>(`/chats/${chatId}/nodes`, {
+    params: selectedNodeId ? { selected_node_id: selectedNodeId } : {},
+  });
+  return res.data;
 }
 
 export async function sendMessage(
   chatId: string,
   body: { prompt: string; selectedNodeId: string | null }
 ) {
-  return axios.post(`/chat/${chatId}/send`, {
+  const res = await api.post(`/chats/${chatId}/send`, {
     prompt: body.prompt,
     selected_node_id: body.selectedNodeId,
   });
+  return res.data;
 }
