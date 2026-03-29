@@ -4,11 +4,22 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from backend.db import database, models
+from fastapi.middleware.cors import CORSMiddleware
 # , schemas
 
 app = FastAPI(title="Fork-LM Backend")
 
 # --- Dependency --- #
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_db():
     db = next(database.get_session())  # gets Session from database.py
@@ -21,7 +32,7 @@ def create_random_uuid():
     return str(uuid.uuid4())
 
 # --- API Endpoints --- #
-
+#fetch all chats for sidebar
 @app.get("/chats")
 def list_chats(
     user_id: int = 1,  # dummy for MVP
