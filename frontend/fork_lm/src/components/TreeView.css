@@ -37,3 +37,14 @@
 .react-flow__edge {
   stroke: #222;
 }
+
+/* Dark Mode Styles */
+.tree-view-container.dark-theme .react-flow__node {
+  background: #2a2a2a;
+  border-color: #4a4a4a;
+  color: #e0e0e0;
+}
+
+.tree-view-container.dark-theme .react-flow__edge {
+  stroke: #5a5a5a;
+}

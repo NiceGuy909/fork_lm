@@ -5,12 +5,16 @@ import "./Navbar.css";
 export function Navbar({
   currentView,
   onViewChange,
+  isDarkMode,
+  onThemeToggle,
 }: {
   currentView: "chat" | "tree";
   onViewChange: (view: "chat" | "tree") => void;
+  isDarkMode: boolean;
+  onThemeToggle: () => void;
 }) {
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isDarkMode ? "dark-theme" : ""}`}>
       <div className="navbar-container">
         <div className="navbar-brand">
           <h1>ForkLM</h1>
@@ -38,6 +42,16 @@ export function Navbar({
           >
             Tree
           </span>
+
+          <div className="theme-toggle-section">
+            <button 
+              className="theme-toggle-btn" 
+              onClick={onThemeToggle}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? "☀️" : "🌙"}
+            </button>
+          </div>
         </div>
       </div>
     </nav>

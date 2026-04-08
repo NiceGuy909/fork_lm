@@ -1,38 +1,49 @@
 // src/components/ChatList.tsx
 
-import { useEffect, useState } from "react";
 import type { Chat } from "../api/chatApi";
-import { getChats } from "../api/chatApi";
+import "./ChatList.css";
 
 export function ChatList({
+  chats,
   selectedChatId,
   onSelectChat,
+  onDeleteChat,
+  onCreateChat,
+  isDarkMode,
 }: {
+  chats: Chat[];
   selectedChatId: string | null;
-  onSelectChat: (id: string | null) => void;
+  onSelectChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
+  onCreateChat: () => void;
+  isDarkMode: boolean;
 }) {
-  const [chats, setChats] = useState<Chat[]>([]);
-
-  useEffect(() => {
-    getChats().then(setChats);
-  }, []);
-
   return (
-    <div style={{ width: "200px", borderRight: "1px solid #ccc", padding: "8px" }}>
-      <h3>Chats</h3>
-      {chats.map((chat) => (
-        <div
-          key={chat.id}
-          style={{
-            padding: "8px",
-            cursor: "pointer",
-            background: selectedChatId === chat.id ? "#e0f7fa" : "white",
-          }}
-          onClick={() => onSelectChat(chat.id)}
-        >
-          {chat.title || "Untitled Chat"}
-        </div>
-      ))}
+    <div className={`chat-list-container ${isDarkMode ? "dark-theme" : ""}`}>
+      <div className="chat-list-title">Conversations</div>
+      <button className="new-chat-button" onClick={onCreateChat}>
+        + New Chat
+      </button>
+      <div className="chat-list-items">
+        {chats.map((chat) => (
+          <div key={chat.id} className="chat-item">
+            <button
+              className={`chat-item-button ${selectedChatId === chat.id ? "active" : ""}`}
+              onClick={() => onSelectChat(chat.id)}
+              title={chat.title ?? chat.id}
+            >
+              {chat.title ?? chat.id}
+            </button>
+            <button
+              className="chat-delete-button"
+              onClick={() => onDeleteChat(chat.id)}
+              title="Delete chat"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

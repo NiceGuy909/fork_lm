@@ -3,6 +3,7 @@ import { ChatView } from "./components/ChatView";
 import { PromptBar } from "./components/PromptBar";
 import { TreeView } from "./components/TreeView";
 import { Navbar } from "./components/Navbar";
+import { ChatList } from "./components/ChatList";
 import { createChat, deleteChat, getChats, sendMessage, type Chat } from "./api/chatApi";
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentView, setCurrentView] = useState<"chat" | "tree">("chat");
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   console.log("App rendered - selectedChatId:", selectedChatId, "currentView:", currentView);
 
@@ -52,44 +54,32 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
-      <Navbar currentView={currentView} onViewChange={setCurrentView} />
+    <div style={{ 
+      display: "flex", 
+      flexDirection: "column", 
+      height: "100vh", 
+      width: "100vw", 
+      backgroundColor: isDarkMode ? "#1a1a1a" : "#e8e8e8" 
+    }}>
+      <Navbar 
+        currentView={currentView} 
+        onViewChange={setCurrentView} 
+        isDarkMode={isDarkMode}
+        onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+      />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }}>
-        <div style={{ width: "280px", borderRight: "1px solid #ddd", padding: "8px 4px", overflowY: "auto", minWidth: "280px", flexShrink: 0 }}>
-          <button onClick={handleCreateChat} style={{ marginBottom: 16, width: "100%", padding: "8px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>
-            New Chat
-          </button>
-
-          {chats.map((chat) => (
-            <div
-              key={chat.id}
-              style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}
-            >
-              <button
-                onClick={() => {
-                  setSelectedChatId(chat.id);
-                  setSelectedNodeId(null);
-                }}
-                style={{
-                  flex: 1,
-                  textAlign: "left",
-                  padding: 8,
-                  backgroundColor: selectedChatId === chat.id ? "#e3f2fd" : "#f9f9f9",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                {chat.title ?? chat.id}
-              </button>
-
-              <button onClick={() => handleDeleteChat(chat.id)} style={{ padding: "4px 8px", backgroundColor: "#ff6b6b", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>
-                X
-              </button>
-            </div>
-          ))}
-        </div>
+        <ChatList
+          chats={chats}
+          selectedChatId={selectedChatId}
+          onSelectChat={(chatId) => {
+            setSelectedChatId(chatId);
+            setSelectedNodeId(null);
+          }}
+          onDeleteChat={handleDeleteChat}
+          onCreateChat={handleCreateChat}
+          isDarkMode={isDarkMode}
+        />
 
         <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0, width: "100%" }}>
           {selectedChatId && currentView === "chat" && (
@@ -99,8 +89,9 @@ export default function App() {
                 chatId={selectedChatId}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                isDarkMode={isDarkMode}
               />
-              <PromptBar onSend={handleSend} />
+              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} />
             </>
           )}
           {selectedChatId && currentView === "tree" && (
@@ -110,11 +101,12 @@ export default function App() {
                 chatId={selectedChatId}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                isDarkMode={isDarkMode}
               />
             </div>
           )}
           {!selectedChatId && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "#999" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: isDarkMode ? "#666" : "#999" }}>
               Select or create a chat to begin
             </div>
           )}
