@@ -3,7 +3,7 @@
 .chat-list-container {
   width: 280px;
   border-right: 1px solid #e0e0e0;
-  padding: 12px;
+  padding: 12px 12px 12px 12px;
   overflow-y: auto;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   min-width: 280px;
