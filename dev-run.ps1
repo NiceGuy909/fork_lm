@@ -30,8 +30,7 @@ Write-Host ""
 # Start Backend
 Write-Host "[1/2] Starting Backend (FastAPI on http://localhost:8000)..." -ForegroundColor Green
 $backendScript = {
-    Set-Location backend
-    & .\ForkVenv\Scripts\Activate.ps1
+    & .\backend\ForkVenv\Scripts\Activate.ps1
     Write-Host ""
     Write-Host "Backend server is starting..." -ForegroundColor Green
     Write-Host "API Docs: http://localhost:8000/docs" -ForegroundColor Cyan

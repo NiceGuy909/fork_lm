@@ -1,14 +1,28 @@
 import uuid
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
+import google.generativeai as genai
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from dotenv import load_dotenv
 
 from backend.db import database, models
+
+# Load environment variables
+load_dotenv()
+
+# Configure Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
+
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-flash-latest")
 
 app = FastAPI(title="Fork-LM Backend")
 
@@ -38,30 +52,77 @@ class SendBody(BaseModel):
     selected_node_id: Optional[str] = None
 
 def generate_response(messages):
-    # Placeholder for LLM integration
-    return "This is a response from the LLM based on the provided messages."
+    """Generate response using Google Gemini API"""
+    try:
+        # Convert messages to Gemini format
+        # Filter out system messages and format for Gemini
+        conversation_history = []
+        for msg in messages:
+            if msg["role"] == "system":
+                # Prepend system message to first user message
+                continue
+            elif msg["role"] == "user":
+                conversation_history.append({
+                    "role": "user",
+                    "parts": [msg["content"]]
+                })
+            elif msg["role"] == "assistant":
+                conversation_history.append({
+                    "role": "model",
+                    "parts": [msg["content"]]
+                })
+        
+        # Start chat session with history
+        chat = model.start_chat(history=conversation_history[:-1] if len(conversation_history) > 1 else [])
+        
+        # Send the last user message and get response
+        last_message = conversation_history[-1]["parts"][0] if conversation_history else ""
+        response = chat.send_message(last_message)
+        
+        return response.text
+    except Exception as e:
+        print(f"Error generating response with Gemini: {e}")
+        return f"I apologize, but I encountered an error: {str(e)}"
 
 def generate_summary(messages):
-    for message in messages:
-        print(f"{message['role']}: {message['content']}")
+    """Generate summary using Google Gemini API for checkpoint nodes"""
+    try:
+        # Build context from messages
+        context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages])
+        
+        summary_prompt = f"""Please provide a brief 1-2 sentence summary of this conversation section:
 
-#only one database fetch and return only the last 5 ancestors with summary on top
+{context}
+
+Summary:"""
+        
+        response = model.generate_content(summary_prompt)
+        return response.text
+    except Exception as e:
+        print(f"Error generating summary with Gemini: {e}")
+        return None
+
+#only one database fetch and return the complete ancestor chain from root to selected node
 def get_ancestor_chain(db: Session, chat_id: str, node_id: str):
     node = db.get(models.Node, node_id)
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
 
-    path_pattern = f"{node.path}%"
-    ancestors = db.query(models.Node).filter(
-        models.Node.chat_id == chat_id,
-        models.Node.path.like(path_pattern)
-    ).order_by(models.Node.depth).all()
-
+    # Build all ancestor paths from the node's path
+    # Example: if path is "/0/1/3", we need paths: "/0", "/0/1", "/0/1/3"
+    path_parts = node.path.strip('/').split('/')
     
-    recent_ancestors = [ancestor for ancestor in ancestors if ancestor.summary][-5:]
-    recent_ancestors += [ancestor for ancestor in ancestors if not ancestor.summary][-5:]
-
-    return recent_ancestors
+    ancestors = []
+    for i in range(1, len(path_parts) + 1):
+        ancestor_path = '/' + '/'.join(path_parts[:i])
+        ancestor = db.query(models.Node).filter(
+            models.Node.chat_id == chat_id,
+            models.Node.path == ancestor_path
+        ).first()
+        if ancestor:
+            ancestors.append(ancestor)
+    
+    return ancestors
 
 # Get context of branch from previous node with summary until selected node, and build messages for LLM (without fetching everything, only fetching summaries for checkpoints and prompts/responses for selected branch)
 # without fetching full ancestor chain

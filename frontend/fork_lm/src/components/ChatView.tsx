@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import type { Node } from "../api/chatApi";
 import { getNodes } from "../api/chatApi";
 import "./ChatView.css";
@@ -8,11 +9,13 @@ export function ChatView({
   selectedNodeId,
   onSelectNode,
   isDarkMode,
+  isLoading,
 }: {
   chatId: string;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
   isDarkMode: boolean;
+  isLoading: boolean;
 }) {
   const [nodes, setNodes] = useState<Node[]>([]);
 
@@ -35,10 +38,25 @@ export function ChatView({
           </div>
 
           <div className="assistant-message">
-            <div className="assistant-bubble">{node.response}</div>
+            <div className="assistant-bubble">
+              <ReactMarkdown>{node.response}</ReactMarkdown>
+            </div>
           </div>
         </div>
       ))}
+      
+      {isLoading && (
+        <div className={`loading-message ${isDarkMode ? "dark-theme" : ""}`}>
+          <div className="loading-bubble">
+            <div className="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span className="loading-text">AI is thinking...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

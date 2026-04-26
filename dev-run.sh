@@ -44,8 +44,7 @@ trap cleanup SIGINT SIGTERM
 # Start Backend
 echo "[1/2] Starting Backend (FastAPI on http://localhost:8000)..."
 (
-    cd backend
-    source ForkVenv/bin/activate
+    source backend/ForkVenv/bin/activate
     echo ""
     echo "Backend server is starting..."
     echo "API Docs: http://localhost:8000/docs"

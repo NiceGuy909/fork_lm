@@ -13,6 +13,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentView, setCurrentView] = useState<"chat" | "tree">("chat");
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   console.log("App rendered - selectedChatId:", selectedChatId, "currentView:", currentView);
 
@@ -48,9 +49,14 @@ export default function App() {
 
   async function handleSend(prompt: string) {
     if (!selectedChatId) return;
-    const res = await sendMessage(selectedChatId, { prompt, selectedNodeId });
-    setSelectedNodeId(res.node.id);
-    setRefreshKey((k) => k + 1);
+    try {
+      setIsLoading(true);
+      const res = await sendMessage(selectedChatId, { prompt, selectedNodeId });
+      setSelectedNodeId(res.node.id);
+      setRefreshKey((k) => k + 1);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -85,8 +91,9 @@ export default function App() {
           {selectedChatId && currentView === "chat" && (
             <>
               <ChatView
-                key={`${selectedChatId}-${selectedNodeId}-${refreshKey}`}
-                chatId={selectedChatId}
+                isLoading={isLoading}
+              />
+              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} isLoading={isLoading
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
                 isDarkMode={isDarkMode}

@@ -35,7 +35,7 @@ echo.
 
 REM Start Backend
 echo [1/2] Starting Backend (FastAPI on http://localhost:8000)...
-start "ForkLM Backend" cmd /k "cd backend && ForkVenv\Scripts\activate && echo. && echo Backend server is starting... && echo API Docs: http://localhost:8000/docs && echo. && uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
+start "ForkLM Backend" cmd /k "ForkVenv\Scripts\activate && echo. && echo Backend server is starting... && echo API Docs: http://localhost:8000/docs && echo. && uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
 
 REM Wait a moment for backend to start
 timeout /t 2 /nobreak

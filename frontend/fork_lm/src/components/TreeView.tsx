@@ -109,7 +109,16 @@ export function TreeView({
     }
 
     if (chatId) loadTreeData();
-  }, [chatId, selectedNodeId, setNodes, setEdges]);
+  }, [chatId, setNodes, setEdges]);
+
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({
+        ...n,
+        selected: n.id === selectedNodeId,
+      }))
+    );
+  }, [selectedNodeId, setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => {

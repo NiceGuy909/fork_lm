@@ -26,12 +26,26 @@
 
 .react-flow__node {
   background: #fff;
-  border: 1px solid #222;
+  border: 2px solid #222;
   border-radius: 3px;
   padding: 10px 15px;
   text-align: center;
   font-size: 12px;
   min-width: 150px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.react-flow__node:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.react-flow__node.selected {
+  background: #667eea;
+  color: white;
+  border-color: #764ba2;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
 
 .react-flow__edge {
@@ -43,6 +57,18 @@
   background: #2a2a2a;
   border-color: #4a4a4a;
   color: #e0e0e0;
+}
+
+.tree-view-container.dark-theme .react-flow__node:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.tree-view-container.dark-theme .react-flow__node.selected {
+  background: #667eea;
+  color: white;
+  border-color: #764ba2;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
 
 .tree-view-container.dark-theme .react-flow__edge {

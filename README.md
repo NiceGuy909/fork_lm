@@ -158,6 +158,29 @@ Once the backend is running, you can access the interactive API documentation at
 
 ## Environment Configuration
 
+### Gemini API Setup
+
+ForkLM uses Google's Gemini API for generating responses. You need to:
+
+1. **Get your API key**:
+   - Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Click "Create API Key"
+   - Copy the generated key
+
+2. **Create a `.env` file** in the ForkLM root directory:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Add your API key** to `.env`:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+
+4. **Verify it's working**: The backend will load the key automatically when you start the server.
+
+### Database Configuration
+
 The application uses the following configuration (located in `backend/db/database.py`):
 
 ```
