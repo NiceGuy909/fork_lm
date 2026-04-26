@@ -37,39 +37,54 @@ class SendBody(BaseModel):
     prompt: str
     selected_node_id: Optional[str] = None
 
-def call_llm(messages) -> str:
-    last_user = messages[-1]["content"] if messages else ""
-    return f"I received your prompt: {last_user}\n\nThis is a mock assistant reply from Fork-LM."
+def generate_response(messages):
+    # Placeholder for LLM integration
+    return "This is a response from the LLM based on the provided messages."
 
-def get_ancestor_chain(db: Session, chat_id: str, selected_node_id: str | None):
-    if not selected_node_id:
-        return []
+def generate_summary(messages):
+    for message in messages:
+        print(f"{message['role']}: {message['content']}")
 
-    selected = db.get(models.Node, selected_node_id)
-    if not selected or str(selected.chat_id) != str(chat_id):
+#only one database fetch and return only the last 5 ancestors with summary on top
+def get_ancestor_chain(db: Session, chat_id: str, node_id: str):
+    node = db.get(models.Node, node_id)
+    if not node:
         raise HTTPException(status_code=404, detail="Node not found")
 
-    path_parts = selected.path.strip("/").split("/")
-    ancestor_tokens = [int(t) for t in path_parts if t]
+    path_pattern = f"{node.path}%"
+    ancestors = db.query(models.Node).filter(
+        models.Node.chat_id == chat_id,
+        models.Node.path.like(path_pattern)
+    ).order_by(models.Node.depth).all()
 
-    ancestors = (
-        db.query(models.Node)
-        .filter(
-            models.Node.chat_id == chat_id,
-            models.Node.token.in_(ancestor_tokens),
-        )
-        .order_by(models.Node.token)
-        .all()
-    )
-    return ancestors
+    
+    recent_ancestors = [ancestor for ancestor in ancestors if ancestor.summary][-5:]
+    recent_ancestors += [ancestor for ancestor in ancestors if not ancestor.summary][-5:]
 
+    return recent_ancestors
+
+# Get context of branch from previous node with summary until selected node, and build messages for LLM (without fetching everything, only fetching summaries for checkpoints and prompts/responses for selected branch)
+# without fetching full ancestor chain
 def build_branch_messages(db: Session, chat_id: str, selected_node_id: str | None):
-    chain = get_ancestor_chain(db, chat_id, selected_node_id)
-    msgs = []
-    for n in chain:
-        msgs.append({"role": "user", "content": n.prompt})
-        msgs.append({"role": "assistant", "content": n.response})
-    return msgs
+    messages = []
+    if selected_node_id:
+        node = db.get(models.Node, selected_node_id)
+        if not node:
+            raise HTTPException(status_code=404, detail="Selected node not found")
+
+        # Fetch ancestors with summaries
+        ancestors = get_ancestor_chain(db, chat_id, selected_node_id)
+        for ancestor in ancestors:
+            if ancestor.summary:
+                messages.append({"role": "system", "content": f"Summary of previous conversation: {ancestor.summary}"})
+            else:
+                if ancestor.prompt:
+                    messages.append({"role": "user", "content": ancestor.prompt})
+                if ancestor.response:
+                    messages.append({"role": "assistant", "content": ancestor.response})
+
+    return messages
+
 
 def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt: str, response: str):
     parent = None
@@ -88,6 +103,10 @@ def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt:
     new_path = f"/{new_token}" if parent is None else f"{parent.path}/{new_token}"
     depth = len([p for p in new_path.split("/") if p])
 
+    context = build_branch_messages(db, chat_id, selected_node_id)
+
+    context.append({"role": "user", "content": prompt})
+
     node = models.Node(
         id=create_random_uuid(),
         chat_id=chat_id,
@@ -99,11 +118,15 @@ def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt:
         response=response,
         created_at=utcnow(),
         depth=depth,
+        # Auto-generate summary if checkpoint node
+        summary=generate_summary(context) if depth % 5 == 0 else None,
     )
     db.add(node)
     db.commit()
     db.refresh(node)
     return node
+
+
 
 @app.get("/chats")
 def list_chats(user_id: int = 1, db: Session = Depends(get_db)):
@@ -193,7 +216,7 @@ def get_nodes(chat_id: str, selected_node_id: str | None = None, db: Session = D
 def send_message(chat_id: str, body: SendBody, db: Session = Depends(get_db)):
     messages = build_branch_messages(db, chat_id, body.selected_node_id)
     messages.append({"role": "user", "content": body.prompt})
-    llm_text = call_llm(messages)
+    llm_text = generate_response(build_branch_messages(db, chat_id, body.selected_node_id) + [{"role": "user", "content": body.prompt}])
     node = create_node(db, chat_id, body.selected_node_id, body.prompt, llm_text)
 
     return {
@@ -207,5 +230,6 @@ def send_message(chat_id: str, body: SendBody, db: Session = Depends(get_db)):
             "response": node.response,
             "created_at": node.created_at,
             "depth": node.depth,
+            "summary": node.summary,
         }
     }

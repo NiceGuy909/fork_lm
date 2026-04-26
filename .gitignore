@@ -1,0 +1,91 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Virtual Environments
+backend/ForkVenv/
+venv/
+ENV/
+env/
+.venv
+
+# Node Dependencies
+node_modules/
+frontend/fork_lm/node_modules/
+
+# Build Output
+dist/
+build/
+frontend/fork_lm/dist/
+*.egg-info/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.iml
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+local.db
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.bak
+*.swp
+*~
+.tmp/
+temp/
+
+# Coverage Reports
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Development
+.vite/
+.turbo/
+dist-ssr/
+
+# Package Manager Lock Files (optional - uncomment if you prefer)
+# package-lock.json
+# poetry.lock
+# pip-lock.txt

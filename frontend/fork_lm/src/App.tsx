@@ -20,7 +20,7 @@ export default function App() {
     const data = await getChats();
     setChats(data);
     if (!selectedChatId && data.length > 0) {
-      setSelectedChatId(data[0].id);
+      setSelectedChatId(data[data.length-1].id);
     }
   }
 

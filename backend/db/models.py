@@ -42,6 +42,7 @@ class Node(Base):
     response: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     depth: Mapped[int] = mapped_column(Integer, nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text,nullable=True)
 
     # Self‑ref parent/children
     parent: Mapped["Node"] = relationship("Node", remote_side=[id], back_populates="children")
