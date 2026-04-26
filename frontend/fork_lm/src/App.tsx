@@ -93,7 +93,7 @@ export default function App() {
               <ChatView
                 isLoading={isLoading}
               />
-              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} isLoading={isLoading
+              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} isLoading={isLoading}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
                 isDarkMode={isDarkMode}
