@@ -19,7 +19,7 @@ export function ChatList({
   isDarkMode: boolean;
 }) {
   return (
-    <div className={`chat-list-container ${isDarkMode ? "dark-theme" : ""}`}>
+    <div className="chat-list-container">
       <div className="chat-list-title">Conversations</div>
       <button className="new-chat-button" onClick={onCreateChat}>
         + New Chat

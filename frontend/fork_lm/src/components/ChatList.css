@@ -1,12 +1,12 @@
-/* ChatList Styles */
+/* ChatList Styles - Perplexity Design */
 
 .chat-list-container {
-  width: 280px;
-  border-right: 1px solid #e0e0e0;
-  padding: 12px 12px 12px 12px;
+  width: 260px;
+  border-right: 1px solid #2D3548;
+  padding: 16px 12px;
   overflow-y: auto;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  min-width: 280px;
+  background: #0F1419;
+  min-width: 260px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -14,38 +14,42 @@
 }
 
 .chat-list-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: #495057;
+  color: #8B8B8B;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   padding: 12px 8px;
   margin-bottom: 8px;
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 1px solid #2D3548;
 }
 
 .new-chat-button {
   width: 100%;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  padding: 11px 14px;
+  background: transparent;
+  color: #E4E4E7;
+  border: 1px solid #3A3F51;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin-bottom: 8px;
 }
 
 .new-chat-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: rgba(167, 139, 250, 0.1);
+  border-color: #A78BFA;
+  color: #A78BFA;
 }
 
 .new-chat-button:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .chat-list-items {
@@ -67,37 +71,73 @@
 .chat-item-button {
   flex: 1;
   text-align: left;
-  padding: 12px 14px;
-  background: white;
-  border: 1px solid #dee2e6;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #495057;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  color: #B4B4B4;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-item-button:hover {
-  border-color: #adb5bd;
-  background: #f8f9fa;
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.2);
+  color: #E4E4E7;
 }
 
 .chat-item-button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
+  border-color: #A78BFA;
+  font-weight: 500;
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.2);
 }
 
 .chat-delete-button {
   padding: 8px 10px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: transparent;
+  color: #8B8B8B;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.chat-delete-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+/* Scrollbar styling */
+.chat-list-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-list-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-list-items::-webkit-scrollbar-thumb {
+  background: #3A3F51;
+  border-radius: 3px;
+}
+
+.chat-list-items::-webkit-scrollbar-thumb:hover {
+  background: #4A4F61;
+}
   font-size: 12px;
   transition: all 0.3s ease;
   min-width: 36px;

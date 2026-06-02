@@ -18,6 +18,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String)
+    gemini_api_key: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class Chat(Base):

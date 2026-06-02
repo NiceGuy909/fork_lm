@@ -7,11 +7,13 @@ export function Navbar({
   onViewChange,
   isDarkMode,
   onThemeToggle,
+  onSettingsClick,
 }: {
   currentView: "chat" | "tree";
   onViewChange: (view: "chat" | "tree") => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
+  onSettingsClick: () => void;
 }) {
   return (
     <nav className={`navbar ${isDarkMode ? "dark-theme" : ""}`}>
@@ -50,6 +52,13 @@ export function Navbar({
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {isDarkMode ? "☀️" : "🌙"}
+            </button>
+            <button 
+              className="theme-toggle-btn" 
+              onClick={onSettingsClick}
+              title="Settings"
+            >
+              ⚙️
             </button>
           </div>
         </div>

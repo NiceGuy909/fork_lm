@@ -1,0 +1,38 @@
+Postgress username fork_lm : dev123
+database name  = fork_lm
+server localhost
+
+NEW TOKEN ID PATH TOKEN CALC AFTER PROMPT=>
+
+import uuid
+
+def compute_new_token_and_path(session, chat_id, parent_id=None) -> (int, str, str):
+    """
+    Given chat_id and parent_id, returns:
+        (new_token, new_path, new_node_id)
+    """
+    # 1. Get MAX(token) for this chat; default 0 if empty
+    max_token = session.execute(
+        "SELECT COALESCE(MAX(token), 0) FROM nodes WHERE chat_id = :chat_id",
+        {"chat_id": chat_id}
+    ).scalar()
+
+    new_token = max_token + 1
+
+    # 2. Build path: if parent_id is None → root, else parent.path + "/" + str(new_token)
+    if parent_id is None:
+        new_path = f"/{new_token}"
+    else:
+        parent_row = session.execute(
+            "SELECT path FROM nodes WHERE id = :parent_id",
+            {"parent_id": parent_id}
+        ).fetchone()
+        if parent_row is None:
+            raise ValueError("Parent node not found")
+        parent_path = parent_row[0]
+        new_path = f"{parent_path}/{new_token}"
+
+    # 3. Generate new node UUID
+    new_node_id = str(uuid.uuid4())
+
+    return new_token, new_path, new_node_id

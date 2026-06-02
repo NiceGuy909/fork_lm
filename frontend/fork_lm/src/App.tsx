@@ -4,18 +4,35 @@ import { PromptBar } from "./components/PromptBar";
 import { TreeView } from "./components/TreeView";
 import { Navbar } from "./components/Navbar";
 import { ChatList } from "./components/ChatList";
-import { createChat, deleteChat, getChats, sendMessage, type Chat } from "./api/chatApi";
+import { Settings } from "./components/Settings";
+import { createChat, deleteChat, getChats, sendMessage, getApiKey, getNodes, type Chat } from "./api/chatApi";
 
 export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [currentView, setCurrentView] = useState<"chat" | "tree">("chat");
+  const [currentView, setCurrentView] = useState<"chat" | "tree">("tree");
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   console.log("App rendered - selectedChatId:", selectedChatId, "currentView:", currentView);
+
+  useEffect(() => {
+    // Load API key on mount
+    const savedApiKey = getApiKey();
+    setApiKey(savedApiKey);
+  }, []);
+
+  useEffect(() => {
+    if (isSettingsOpen) {
+      // Reload API key when settings is opened
+      const savedApiKey = getApiKey();
+      setApiKey(savedApiKey);
+    }
+  }, [isSettingsOpen]);
 
   async function loadChats() {
     const data = await getChats();
@@ -28,6 +45,20 @@ export default function App() {
   useEffect(() => {
     loadChats();
   }, []);
+
+  // When a chat is selected, fetch its nodes and select the last one by default
+  useEffect(() => {
+    if (selectedChatId) {
+      getNodes(selectedChatId, null).then((res) => {
+        if (res.nodes.length > 0) {
+          // Select the last node
+          setSelectedNodeId(res.nodes[res.nodes.length - 1].id);
+        } else {
+          setSelectedNodeId(null);
+        }
+      });
+    }
+  }, [selectedChatId]);
 
   async function handleCreateChat() {
     const chat = await createChat("New Chat");
@@ -49,9 +80,14 @@ export default function App() {
 
   async function handleSend(prompt: string) {
     if (!selectedChatId) return;
+    if (!apiKey) {
+      alert("Please set your Gemini API key in settings first.");
+      setIsSettingsOpen(true);
+      return;
+    }
     try {
       setIsLoading(true);
-      const res = await sendMessage(selectedChatId, { prompt, selectedNodeId });
+      const res = await sendMessage(selectedChatId, { prompt, selectedNodeId, apiKey });
       setSelectedNodeId(res.node.id);
       setRefreshKey((k) => k + 1);
     } finally {
@@ -65,14 +101,17 @@ export default function App() {
       flexDirection: "column", 
       height: "100vh", 
       width: "100vw", 
-      backgroundColor: isDarkMode ? "#1a1a1a" : "#e8e8e8" 
+      backgroundColor: "#0A0E27"
     }}>
       <Navbar 
         currentView={currentView} 
         onViewChange={setCurrentView} 
         isDarkMode={isDarkMode}
         onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+        onSettingsClick={() => setIsSettingsOpen(true)}
       />
+
+      <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden", width: "100%" }}>
         <ChatList
@@ -87,18 +126,17 @@ export default function App() {
           isDarkMode={isDarkMode}
         />
 
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0, width: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0, width: "100%", backgroundColor: "#0A0E27" }}>
           {selectedChatId && currentView === "chat" && (
             <>
               <ChatView
-                isLoading={isLoading}
-              />
-              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} isLoading={isLoading}
+                chatId={selectedChatId}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
                 isDarkMode={isDarkMode}
+                isLoading={isLoading}
               />
-              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} />
+              <PromptBar onSend={handleSend} isDarkMode={isDarkMode} isLoading={isLoading} />
             </>
           )}
           {selectedChatId && currentView === "tree" && (
@@ -113,7 +151,7 @@ export default function App() {
             </div>
           )}
           {!selectedChatId && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: isDarkMode ? "#666" : "#999" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "#8B8B8B" }}>
               Select or create a chat to begin
             </div>
           )}

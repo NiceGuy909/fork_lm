@@ -16,13 +16,34 @@ from backend.db import database, models
 # Load environment variables
 load_dotenv()
 
-# Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
+# Initialize database schema
+database.create_db_and_tables()
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-flash-latest")
+# Ensure default user exists
+def ensure_default_user():
+    """Create default user if it doesn't exist"""
+    db = next(database.get_session())
+    try:
+        user = db.query(models.User).filter(models.User.id == 1).first()
+        if not user:
+            default_user = models.User(id=1, email="default@forklm.local")
+            db.add(default_user)
+            db.commit()
+            print("✓ Created default user with id=1")
+        else:
+            print("✓ Default user already exists")
+    except Exception as e:
+        print(f"Error ensuring default user: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+ensure_default_user()
+
+# Optional: Configure Gemini API from environment for backward compatibility
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", None)
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 app = FastAPI(title="Fork-LM Backend")
 
@@ -50,10 +71,21 @@ def create_random_uuid():
 class SendBody(BaseModel):
     prompt: str
     selected_node_id: Optional[str] = None
+    api_key: Optional[str] = None
 
-def generate_response(messages):
+class SetAPIKeyBody(BaseModel):
+    api_key: str
+
+def generate_response(messages, api_key: Optional[str] = None):
     """Generate response using Google Gemini API"""
     try:
+        if not api_key:
+            raise ValueError("No API key provided. Please set your Gemini API key in settings.")
+        
+        # Configure with user's API key
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(model_name="gemini-flash-latest")
+        
         # Convert messages to Gemini format
         # Filter out system messages and format for Gemini
         conversation_history = []
@@ -84,9 +116,16 @@ def generate_response(messages):
         print(f"Error generating response with Gemini: {e}")
         return f"I apologize, but I encountered an error: {str(e)}"
 
-def generate_summary(messages):
+def generate_summary(messages, api_key: Optional[str] = None):
     """Generate summary using Google Gemini API for checkpoint nodes"""
     try:
+        if not api_key:
+            return None
+        
+        # Configure with user's API key
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(model_name="gemini-flash-latest")
+        
         # Build context from messages
         context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages])
         
@@ -147,7 +186,7 @@ def build_branch_messages(db: Session, chat_id: str, selected_node_id: str | Non
     return messages
 
 
-def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt: str, response: str):
+def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt: str, response: str, api_key: Optional[str] = None):
     parent = None
     if selected_node_id:
         parent = db.get(models.Node, selected_node_id)
@@ -180,7 +219,7 @@ def create_node(db: Session, chat_id: str, selected_node_id: str | None, prompt:
         created_at=utcnow(),
         depth=depth,
         # Auto-generate summary if checkpoint node
-        summary=generate_summary(context) if depth % 5 == 0 else None,
+        summary=generate_summary(context, api_key) if depth % 5 == 0 else None,
     )
     db.add(node)
     db.commit()
@@ -275,10 +314,13 @@ def get_nodes(chat_id: str, selected_node_id: str | None = None, db: Session = D
 
 @app.post("/chats/{chat_id}/send")
 def send_message(chat_id: str, body: SendBody, db: Session = Depends(get_db)):
+    if not body.api_key:
+        raise HTTPException(status_code=400, detail="API key is required. Please set your Gemini API key in settings.")
+    
     messages = build_branch_messages(db, chat_id, body.selected_node_id)
     messages.append({"role": "user", "content": body.prompt})
-    llm_text = generate_response(build_branch_messages(db, chat_id, body.selected_node_id) + [{"role": "user", "content": body.prompt}])
-    node = create_node(db, chat_id, body.selected_node_id, body.prompt, llm_text)
+    llm_text = generate_response(build_branch_messages(db, chat_id, body.selected_node_id) + [{"role": "user", "content": body.prompt}], body.api_key)
+    node = create_node(db, chat_id, body.selected_node_id, body.prompt, llm_text, body.api_key)
 
     return {
         "node": {
@@ -294,3 +336,32 @@ def send_message(chat_id: str, body: SendBody, db: Session = Depends(get_db)):
             "summary": node.summary,
         }
     }
+
+@app.post("/users/api-key")
+def set_api_key(body: SetAPIKeyBody, user_id: int = 1, db: Session = Depends(get_db)):
+    """Set or update the user's Gemini API key"""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    if not user:
+        # Create user if doesn't exist
+        user = models.User(id=user_id, email=f"user_{user_id}@forklm.local", gemini_api_key=body.api_key)
+        db.add(user)
+    else:
+        user.gemini_api_key = body.api_key
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {"ok": True, "message": "API key saved successfully"}
+
+@app.get("/users/api-key")
+def get_api_key(user_id: int = 1, db: Session = Depends(get_db)):
+    """Get the user's Gemini API key status"""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    if not user or not user.gemini_api_key:
+        return {"api_key": None, "is_set": False}
+    
+    # Return masked key for security (only show last 4 characters)
+    masked_key = "..." + user.gemini_api_key[-4:] if len(user.gemini_api_key) > 4 else "..."
+    return {"api_key": masked_key, "is_set": True}

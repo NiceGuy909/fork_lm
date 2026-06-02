@@ -24,40 +24,71 @@ export function PromptBar({
       onSubmit={handleSubmit} 
       style={{ 
         display: "flex", 
-        gap: 8, 
-        padding: 16,
-        backgroundColor: isDarkMode ? "#2a2a2a" : "#f0f0f0",
-        borderTop: `1px solid ${isDarkMode ? "#3a3a3a" : "#d0d0d0"}`,
+        gap: 12, 
+        padding: "16px 24px",
+        backgroundColor: "#0F1419",
+        borderTop: "1px solid #2D3548",
+        alignItems: "center",
       }}
     >
       <input
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder={isLoading ? "Waiting for response..." : "Type a prompt..."}
+        placeholder={isLoading ? "Waiting for response..." : "Ask anything..."}
         disabled={isLoading}
         style={{ 
           flex: 1, 
-          padding: 8,
-          backgroundColor: isDarkMode ? "#1a1a1a" : "white",
-          color: isDarkMode ? "#e0e0e0" : "#000",
-          border: `1px solid ${isDarkMode ? "#3a3a3a" : "#ccc"}`,
-          borderRadius: 4,
+          padding: "11px 14px",
+          backgroundColor: "#16192B",
+          color: "#E4E4E7",
+          border: "1px solid #3A3F51",
+          borderRadius: "8px",
+          fontSize: "15px",
+          fontFamily: "inherit",
           opacity: isLoading ? 0.6 : 1,
           cursor: isLoading ? "not-allowed" : "text",
+          transition: "all 0.2s ease",
+          outline: "none",
+        }}
+        onFocus={(e) => {
+          if (!isLoading) {
+            e.currentTarget.style.borderColor = "#A78BFA";
+            e.currentTarget.style.backgroundColor = "#1A1F3A";
+          }
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = "#3A3F51";
+          e.currentTarget.style.backgroundColor = "#16192B";
         }}
       />
       <button 
         type="submit"
         disabled={isLoading}
         style={{
-          padding: "8px 16px",
-          backgroundColor: isLoading ? "#555" : "#667eea",
-          color: "white",
+          padding: "11px 20px",
+          backgroundColor: isLoading ? "#3A3F51" : "#A78BFA",
+          color: isLoading ? "#8B8B8B" : "#FFFFFF",
           border: "none",
-          borderRadius: 4,
+          borderRadius: "8px",
+          fontSize: "15px",
+          fontWeight: "500",
           cursor: isLoading ? "not-allowed" : "pointer",
-          opacity: isLoading ? 0.6 : 1,
-          transition: "all 0.3s ease",
+          opacity: isLoading ? 0.7 : 1,
+          transition: "all 0.2s ease",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={(e) => {
+          if (!isLoading) {
+            e.currentTarget.style.backgroundColor = "#8B5CF6";
+            e.currentTarget.style.opacity = "0.9";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isLoading) {
+            e.currentTarget.style.backgroundColor = "#A78BFA";
+            e.currentTarget.style.opacity = "1";
+          }
         }}
       >
         {isLoading ? "Sending..." : "Send"}

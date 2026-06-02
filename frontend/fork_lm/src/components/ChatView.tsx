@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Node } from "../api/chatApi";
 import { getNodes } from "../api/chatApi";
 import "./ChatView.css";
@@ -39,7 +40,7 @@ export function ChatView({
 
           <div className="assistant-message">
             <div className="assistant-bubble">
-              <ReactMarkdown>{node.response}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{node.response}</ReactMarkdown>
             </div>
           </div>
         </div>
