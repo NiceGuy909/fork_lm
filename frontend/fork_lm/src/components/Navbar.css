@@ -1,14 +1,14 @@
 /* src/components/Navbar.css - Perplexity Design */
 
 .navbar {
-  background-color: #0F1419;
-  color: #FFFFFF;
+  background-color: #FFFFFF;
+  color: #111827;
   padding: 14px 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid #2D3548;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .navbar-container {
@@ -39,12 +39,12 @@
 .view-label {
   font-size: 14px;
   font-weight: 500;
-  color: #8B8B8B;
+  color: #9CA3AF;
   transition: color 0.2s ease;
 }
 
 .view-label.active {
-  color: #A78BFA;
+  color: #7C3AED;
   font-weight: 600;
 }
 
@@ -65,7 +65,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #3A3F51;
+  background-color: #D1D5DB;
   border-radius: 26px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -85,7 +85,7 @@
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #A78BFA;
+  background-color: #7C3AED;
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -98,13 +98,13 @@
   align-items: center;
   margin-left: 12px;
   padding-left: 24px;
-  border-left: 1px solid #2D3548;
+  border-left: 1px solid #E5E7EB;
 }
 
 .theme-toggle-btn {
   background: none;
   border: none;
-  color: #E4E4E7;
+  color: #6B7280;
   font-size: 18px;
   cursor: pointer;
   padding: 6px 8px;
@@ -116,8 +116,8 @@
 }
 
 .theme-toggle-btn:hover {
-  background-color: rgba(167, 139, 250, 0.1);
-  color: #A78BFA;
+  background-color: rgba(124, 58, 237, 0.1);
+  color: #7C3AED;
 }
 
 /* Dark Mode Navbar */

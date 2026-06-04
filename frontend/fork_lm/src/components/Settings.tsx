@@ -39,7 +39,7 @@ export function Settings({
       await setApiKeyOnServer(apiKey);
       
       setIsKeySet(true);
-      setSaveMessage("✓ API key saved successfully!");
+      setSaveMessage("[OK] API key saved successfully!");
       
       setTimeout(() => {
         setSaveMessage("");
@@ -94,14 +94,14 @@ export function Settings({
             </div>
 
             {saveMessage && (
-              <div className={`save-message ${saveMessage.includes("✓") ? "success" : "error"}`}>
+              <div className={`save-message ${saveMessage.startsWith("[OK]") ? "success" : "error"}`}>
                 {saveMessage}
               </div>
             )}
 
             {isKeySet && (
               <div className="api-key-status">
-                <span className="status-indicator">✓</span>
+                <span className="status-indicator">[OK]</span>
                 <span>API key is set</span>
               </div>
             )}

@@ -1,30 +1,34 @@
 # ForkLM - Branching LLM Conversation Platform
 
-ForkLM is a web application that allows users to have interactive conversations with large language models (LLMs) while maintaining the ability to branch conversations at any point. This creates a tree-like structure where users can explore different conversation paths and compare LLM responses.
+ForkLM is a web application that lets you have interactive conversations with Google Gemini while maintaining the ability to **branch conversations at any point**. This creates a tree-like structure where you can explore different conversation paths and compare responses side by side.
 
 ## Features
 
 - **Branching Conversations**: Fork conversations at any point to explore alternative paths
 - **Chat Management**: Organize and manage multiple conversations
 - **Node-based Structure**: Each message and response is stored as a node with parent-child relationships
-- **User Accounts**: Multi-user support with personalized chat histories
-- **Web Interface**: Modern React-based UI for seamless interaction
+- **Bring Your Own Key (BYOK)**: Use your own Gemini API key — no server-side key required
+- **Auto-Summarization**: Long branches are automatically summarized at checkpoints for context
 
 ## Project Structure
 
 ```
 ForkLM/
 ├── backend/              # FastAPI backend server
-│   ├── main.py          # FastAPI app and routes
+│   ├── main.py          # FastAPI app, routes, Gemini integration
 │   ├── db/              # Database layer
-│   │   ├── database.py  # Database configuration and session management
-│   │   ├── models.py    # SQLAlchemy ORM models
-│   └── ForkVenv/        # Python virtual environment
+│   │   ├── database.py  # SQLAlchemy engine and session management
+│   │   └── models.py    # ORM models (User, Chat, Node)
+│   ├── ForkVenv/        # Python virtual environment (gitignored)
+│   └── requirements.txt # Python dependencies
 ├── frontend/            # React + TypeScript frontend
 │   └── fork_lm/         # Vite + React application
 │       ├── src/         # React components and utilities
 │       ├── public/      # Static assets
 │       └── package.json # Node dependencies
+├── setup.ps1           # One-step setup script
+├── dev-run.ps1         # Launch both backend and frontend
+├── reset_db.py         # Drop and recreate all tables
 └── README.md           # This file
 ```
 
@@ -32,9 +36,9 @@ ForkLM/
 
 ### Backend
 - **Framework**: FastAPI
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy
-- **Python Version**: 3.13+
+- **Database**: SQLite (via SQLAlchemy)
+- **Python Version**: 3.11+ (use official python.org installer, see note below)
+- **LLM API**: Google Gemini (`google-genai` SDK)
 
 ### Frontend
 - **Framework**: React 19
@@ -45,276 +49,282 @@ ForkLM/
 
 ## Prerequisites
 
-- **Python 3.13+** with pip
+- **Python 3.11+** ([python.org](https://www.python.org/downloads/) installer — **not** MSYS2/Cygwin Python)
 - **Node.js 18+** with npm
-- **PostgreSQL 12+** running locally
-- Git (optional, for version control)
+- **SQLite** (no external database server required)
+- Git (optional)
+
+> ⚠️ **Important**: This project requires a standard **python.org** Python installation.  
+> MSYS2 / Cygwin / Windows Store Python have non-standard platform tags (`mingw_x86_64_ucrt`) that are incompatible with the pre-built wheels on PyPI for `cryptography`, `pydantic-core`, and other packages that use the `maturin` build backend. If you use MSYS2 Python, pip will try to build these from source, which will fail.
+
+### Verify Your Python Installation
+
+Run this check to confirm your Python has the correct platform tag:
+
+```powershell
+python -c "import sysconfig; print(sysconfig.get_platform())"
+```
+
+Expected output: `win_amd64`
+
+If it prints `mingw_x86_64_ucrt` (or anything other than `win_amd64`), you are using MSYS2 Python — install python.org Python and use its full path to create the venv.
+
+To find the path of python.org Python (if you have both installed):
+
+```powershell
+# Look for the standard install location
+& "C:\Program Files\Python311\python.exe" -c "import sysconfig; print(sysconfig.get_platform())"
+
+# Or via the Windows Launcher (if installed)
+py -3.11 -c "import sysconfig; print(sysconfig.get_platform())"
+```
 
 ## Setup Instructions
 
-### 1. Database Setup
+### 1. Backend Setup
 
-Before running the application, ensure PostgreSQL is running and create the database:
+From the repo root, run the automated setup script:
 
-```bash
-# Using psql (PostgreSQL command-line)
-psql -U postgres
-
-# In the PostgreSQL prompt:
-CREATE USER fork_lm WITH PASSWORD 'dev123';
-CREATE DATABASE fork_lm OWNER fork_lm;
+```powershell
+.\setup.ps1
 ```
 
-Alternatively, use your preferred PostgreSQL GUI tool (pgAdmin, DBeaver, etc.) to:
-1. Create a new user: `fork_lm` with password `dev123`
-2. Create a new database: `fork_lm` with owner `fork_lm`
+This will:
+- Create `backend/ForkVenv` if it doesn't exist
+- Install Python dependencies from `backend/requirements.txt`
+- Initialize the SQLite database at `backend/local.db`
 
-### 2. Backend Setup
+#### Manual backend setup (if you prefer):
 
-Navigate to the backend directory and set up the Python virtual environment:
+If `python` resolves to the correct python.org installation:
 
-```bash
-cd backend
+```powershell
+# Create virtual environment
+python -m venv backend\ForkVenv
 
-# Activate the virtual environment (Windows)
-ForkVenv\Scripts\activate
+# Activate it (Windows)
+backend\ForkVenv\Scripts\activate
 
-# For other systems (macOS/Linux):
-# source ForkVenv/bin/activate
+# (macOS/Linux)
+# source backend/ForkVenv/bin/activate
 
-# Install/upgrade dependencies (if needed)
-pip install fastapi uvicorn sqlalchemy psycopg2-binary python-dotenv
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install dependencies
+pip install -r backend\requirements.txt
 
 # Initialize the database
 python -c "from backend.db.database import create_db_and_tables; create_db_and_tables()"
 ```
 
-### 3. Frontend Setup
+**If you have multiple Python installations (e.g., MSYS2 + python.org), use the full path of the python.org Python to create the venv:**
 
-Navigate to the frontend directory and install dependencies:
+```powershell
+# Create venv with the correct Python explicitly
+& "C:\Program Files\Python311\python.exe" -m venv backend\ForkVenv
+
+# Activate
+backend\ForkVenv\Scripts\activate
+
+# Upgrade pip inside the venv
+python -m pip install --upgrade pip
+
+# Install dependencies
+pip install -r backend\requirements.txt
+
+# Initialize the database
+python -c "from backend.db.database import create_db_and_tables; create_db_and_tables()"
+```
+
+### 2. Frontend Setup
 
 ```bash
 cd frontend/fork_lm
-
-# Install npm dependencies
 npm install
 ```
+
+### 3. Gemini API Key
+
+You need a Gemini API key to use ForkLM. You can either:
+
+- **Set it in the app UI** (BYOK): Click the ⚙️ settings icon and paste your key. The key is sent with each request and never stored server-side (see `BYOK_SETUP.md`).
+- **Set it in `.env`**: Create a `.env` file in the project root:
+  ```
+  GEMINI_API_KEY=your_api_key_here
+  ```
+  This key is used as a fallback when no per-request key is provided.
+
+Get your free key at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ## Running for Development
 
 ### Quick Start (Recommended)
 
-Use the provided development script to automatically run both the backend and frontend:
-
-**Windows (Batch):**
-```bash
-cd ForkLM
-dev-run.bat
-```
-
-**Windows (PowerShell):**
 ```powershell
-cd ForkLM
 .\dev-run.ps1
 ```
 
-**macOS/Linux:**
-```bash
-cd ForkLM
-./dev-run.sh
-```
-
-This will:
-1. Open the backend terminal and start the FastAPI server on `http://localhost:8000`
-2. Open the frontend terminal and start the development server on `http://localhost:5173`
+This opens two PowerShell windows:
+1. **Backend** — FastAPI on `http://localhost:8000`
+2. **Frontend** — Vite on `http://localhost:5173`
 
 ### Manual Start
 
-If you prefer to run the services manually:
-
-**Terminal 1 - Backend:**
+**Terminal 1 — Backend:**
 ```bash
 cd backend
 ForkVenv\Scripts\activate  # Windows
 # source ForkVenv/bin/activate  # macOS/Linux
-
 uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**Terminal 2 - Frontend:**
+**Terminal 2 — Frontend:**
 ```bash
 cd frontend/fork_lm
 npm run dev
 ```
 
-Then open your browser and navigate to: **http://localhost:5173**
+Then open **http://localhost:5173**.
 
 ## API Documentation
 
-Once the backend is running, you can access the interactive API documentation at:
+Once the backend is running:
 
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## Environment Configuration
-
-### Gemini API Setup
-
-ForkLM uses Google's Gemini API for generating responses. You need to:
-
-1. **Get your API key**:
-   - Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-   - Click "Create API Key"
-   - Copy the generated key
-
-2. **Create a `.env` file** in the ForkLM root directory:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Add your API key** to `.env`:
-   ```
-   GEMINI_API_KEY=your_api_key_here
-   ```
-
-4. **Verify it's working**: The backend will load the key automatically when you start the server.
-
-### Database Configuration
-
-The application uses the following configuration (located in `backend/db/database.py`):
-
-```
-DATABASE_URL = "postgresql+psycopg://fork_lm:dev123@localhost:5432/fork_lm"
-```
-
-To modify the database connection, update the `DATABASE_URL` variable in `backend/db/database.py`.
-
 ## Available Scripts
 
-### Frontend Scripts
+### Root scripts
 
-Navigate to `frontend/fork_lm` and run:
+| Script | Purpose |
+|--------|---------|
+| `.\setup.ps1` | Create venv, install deps, init database |
+| `.\dev-run.ps1` | Launch backend + frontend |
+| `python reset_db.py` | Drop and recreate all tables |
+
+### Backend (in `backend/` with venv active)
 
 ```bash
-npm run dev       # Start development server
-npm run build     # Build for production
-npm run lint      # Run ESLint
-npm run preview   # Preview production build locally
+uvicorn backend.main:app --reload
 ```
 
-### Backend
-
-To run the backend with auto-reload:
+### Frontend (in `frontend/fork_lm/`)
 
 ```bash
-cd backend
-ForkVenv\Scripts\activate
-uvicorn backend.main:app --reload
+npm run dev       # Development server
+npm run build     # Production build
+npm run lint      # ESLint
+npm run preview   # Preview production build
 ```
 
 ## Database Models
 
 ### User
-- `id`: Primary key
-- `email`: User email address
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | Integer | Primary key |
+| `email` | String | User email |
+| `gemini_api_key` | String? | Optional stored key |
 
 ### Chat
-- `id`: UUID primary key
-- `user_id`: Foreign key to User
-- `title`: Chat title/name
-- `created_at`: Timestamp
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (UUID) | Primary key |
+| `user_id` | Integer FK → User | Owner |
+| `title` | Text? | Chat name |
+| `created_at` | Datetime | Auto-generated |
 
 ### Node
-- `id`: UUID primary key
-- `chat_id`: Foreign key to Chat
-- `user_id`: Foreign key to User
-- `parent_id`: Foreign key to parent Node (self-referencing)
-- `token`: Per-chat counter
-- `path`: Hierarchical path (e.g., "/0/1/3")
-- `prompt`: User's input prompt
-- `response`: LLM response
-- `summary`: Optional summary of the node
-- `depth`: Depth in the conversation tree
-- `created_at`: Timestamp
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (UUID) | Primary key |
+| `chat_id` | String FK → Chat | Parent chat |
+| `user_id` | Integer FK → User | Owner |
+| `parent_id` | String FK → Node? | Self-referencing parent |
+| `token` | Integer | Per-chat counter |
+| `path` | Text | Hierarchical path (e.g. `/0/1/3`) |
+| `prompt` | Text | User input |
+| `response` | Text? | LLM response |
+| `summary` | Text? | Auto-generated checkpoint summary |
+| `depth` | Integer | Depth in tree |
+| `created_at` | Datetime | Auto-generated |
 
 ## Troubleshooting
 
+### Build failures for `cryptography` / `pydantic-core` / `maturin`
+
+These packages use the `maturin` Rust build backend. The pre-built wheels on PyPI require the standard `win_amd64` platform tag. **If you are using MSYS2 / Cygwin Python**, pip will fail to match the wheel and attempt a source build, which will fail with:
+
+```
+Python reports SOABI: cpython-311
+Unsupported platform: 311
+```
+
+**Fix**: Install a standard Python from [python.org](https://www.python.org/downloads/) and recreate the venv with it.
+
+### Virtual Environment Issues
+
+If the venv is broken, recreate it:
+
+```powershell
+Remove-Item -Recurse -Force backend\ForkVenv
+python -m venv backend\ForkVenv
+backend\ForkVenv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r backend\requirements.txt
+```
+
 ### Port Already in Use
 
-If port 8000 or 5173 is already in use:
-
-**Backend** (change to different port):
+**Backend**:
 ```bash
 uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001
+# Then update CORS origins in backend/main.py
 ```
-Then update the CORS origins in `backend/main.py`.
 
-**Frontend** (Vite will automatically try the next available port):
+**Frontend** (Vite auto-selects next available):
 ```bash
 npm run dev -- --port 5174
 ```
 
-### Database Connection Issues
+### Database Issues
 
-- Ensure PostgreSQL is running: `psql -U postgres`
-- Verify the database exists: `\l` (in psql)
-- Check credentials in `backend/db/database.py`
-- Ensure the `fork_lm` user has proper permissions
+If the database becomes corrupted or you want a fresh start:
 
-### Virtual Environment Issues
-
-If the virtual environment is not working:
-
-```bash
-cd backend
-python -m venv ForkVenv
-ForkVenv\Scripts\activate
-pip install --upgrade pip
-pip install fastapi uvicorn sqlalchemy psycopg2-binary python-dotenv
+```powershell
+python reset_db.py
 ```
+
+This drops and recreates all tables in `backend/local.db`.
 
 ### Frontend Build Issues
 
-Clear node modules and reinstall:
-
-```bash
+```powershell
 cd frontend/fork_lm
-rm -rf node_modules package-lock.json  # macOS/Linux: use rm
-del node_modules\* package-lock.json   # Windows: use del
+Remove-Item -Recurse -Force node_modules
 npm install
 ```
 
 ## Development Workflow
 
-1. Ensure both backend and frontend are running
-2. Make changes to the code
-3. Backend: Changes are auto-reloaded by Uvicorn
-4. Frontend: Changes are hot-reloaded by Vite
-5. Test in the browser at http://localhost:5173
+1. Start both services (`.dev-run.ps1` or manually)
+2. Edit code — Uvicorn auto-reloads the backend, Vite hot-reloads the frontend
+3. Test at http://localhost:5173
 
 ## Contributing
 
-When making changes:
 - Keep commits focused and descriptive
-- Test both backend and frontend functionality
-- Follow existing code style and conventions
+- Test both backend and frontend
+- Follow existing code style
 - Update documentation as needed
-
-## License
-
-Specify your license here.
-
-## Support
-
-For issues, questions, or suggestions, please create an issue in the repository.
 
 ## Future Enhancements
 
-- [ ] Integration with real LLM APIs (OpenAI, Google Generative AI, etc.)
 - [ ] User authentication and session management
 - [ ] Conversation export (JSON, PDF)
-- [ ] Sharing conversations with other users
-- [ ] Search and filtering for conversations
-- [ ] Dark mode support
+- [ ] Share conversations
+- [ ] Search / filter conversations
+- [x] Dark mode
 - [ ] Mobile-responsive UI
-- [ ] Conversation cost tracking

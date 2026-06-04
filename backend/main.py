@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -29,9 +29,9 @@ def ensure_default_user():
             default_user = models.User(id=1, email="default@forklm.local")
             db.add(default_user)
             db.commit()
-            print("✓ Created default user with id=1")
+            print("[OK] Created default user with id=1")
         else:
-            print("✓ Default user already exists")
+            print("[OK] Default user already exists")
     except Exception as e:
         print(f"Error ensuring default user: {e}")
         db.rollback()
@@ -40,10 +40,16 @@ def ensure_default_user():
 
 ensure_default_user()
 
-# Optional: Configure Gemini API from environment for backward compatibility
+# Optional: create a default Gemini client when the API key is present in environment
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", None)
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+DEFAULT_GENAI_CLIENT = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+
+
+def get_genai_client(api_key: Optional[str] = None):
+    key = api_key or GEMINI_API_KEY
+    if not key:
+        raise ValueError("No API key provided. Please set your Gemini API key in settings.")
+    return genai.Client(api_key=key)
 
 app = FastAPI(title="Fork-LM Backend")
 
@@ -79,38 +85,30 @@ class SetAPIKeyBody(BaseModel):
 def generate_response(messages, api_key: Optional[str] = None):
     """Generate response using Google Gemini API"""
     try:
-        if not api_key:
-            raise ValueError("No API key provided. Please set your Gemini API key in settings.")
+        client = get_genai_client(api_key)
         
-        # Configure with user's API key
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(model_name="gemini-flash-latest")
-        
-        # Convert messages to Gemini format
-        # Filter out system messages and format for Gemini
+        # Convert messages to Gemini chat history format
         conversation_history = []
         for msg in messages:
             if msg["role"] == "system":
-                # Prepend system message to first user message
                 continue
             elif msg["role"] == "user":
                 conversation_history.append({
                     "role": "user",
-                    "parts": [msg["content"]]
+                    "parts": [{"text": msg["content"]}]
                 })
             elif msg["role"] == "assistant":
                 conversation_history.append({
                     "role": "model",
-                    "parts": [msg["content"]]
+                    "parts": [{"text": msg["content"]}]
                 })
         
-        # Start chat session with history
-        chat = model.start_chat(history=conversation_history[:-1] if len(conversation_history) > 1 else [])
-        
-        # Send the last user message and get response
-        last_message = conversation_history[-1]["parts"][0] if conversation_history else ""
+        chat = client.chats.create(
+            model="gemini-flash-latest",
+            history=conversation_history[:-1] if len(conversation_history) > 1 else [],
+        )
+        last_message = conversation_history[-1]["parts"][0]["text"] if conversation_history else ""
         response = chat.send_message(last_message)
-        
         return response.text
     except Exception as e:
         print(f"Error generating response with Gemini: {e}")
@@ -119,23 +117,20 @@ def generate_response(messages, api_key: Optional[str] = None):
 def generate_summary(messages, api_key: Optional[str] = None):
     """Generate summary using Google Gemini API for checkpoint nodes"""
     try:
-        if not api_key:
+        if not api_key and not GEMINI_API_KEY:
             return None
-        
-        # Configure with user's API key
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(model_name="gemini-flash-latest")
-        
-        # Build context from messages
+
+        client = get_genai_client(api_key)
         context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages])
-        
         summary_prompt = f"""Please provide a brief 1-2 sentence summary of this conversation section:
 
 {context}
 
 Summary:"""
-        
-        response = model.generate_content(summary_prompt)
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=summary_prompt,
+        )
         return response.text
     except Exception as e:
         print(f"Error generating summary with Gemini: {e}")

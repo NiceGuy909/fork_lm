@@ -67,6 +67,9 @@ local.db
 ehthumbs.db
 Thumbs.db
 
+# Downloaded wheel files (used for offline install on MSYS2)
+*.whl
+
 # Temporary Files
 *.tmp
 *.bak

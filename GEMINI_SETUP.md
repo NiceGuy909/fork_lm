@@ -41,22 +41,16 @@
 
 ## API Information
 
-- **Model Used**: `gemini-1.5-flash` (faster, good for conversation)
+- **Model Used**: `gemini-2.0-flash` (configured in `backend/main.py`)
 - **Free Tier**: 15 requests per minute with free API key
 - **Documentation**: https://ai.google.dev/docs
 
 ## Switching Models
 
-To use a different Gemini model, edit `backend/main.py` and change:
+The model name is configured in `backend/main.py` at the `chat.send_message()` / `client.models.generate_content()` calls:
 
 ```python
-model = genai.GenerativeModel("gemini-1.5-flash")
+model="gemini-2.0-flash"
 ```
 
-To:
-
-```python
-model = genai.GenerativeModel("gemini-2.0-flash")  # or another model
-```
-
-Available models: https://ai.google.dev/models
+Change the string to another model name. Available models: https://ai.google.dev/models

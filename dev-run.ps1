@@ -24,21 +24,41 @@ if (-not (Test-Path "frontend\fork_lm")) {
     exit 1
 }
 
+function Get-VenvPython {
+    param([string]$venvRoot)
+    $candidates = @(
+        (Join-Path $venvRoot "Scripts\python.exe")
+        (Join-Path $venvRoot "bin\python")
+        (Join-Path $venvRoot "python.exe")
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return $null
+}
+
+$venvPython = Get-VenvPython (Join-Path $PSScriptRoot "backend\ForkVenv")
+
 Write-Host "Starting ForkLM services..." -ForegroundColor Yellow
 Write-Host ""
 
-# Start Backend
-Write-Host "[1/2] Starting Backend (FastAPI on http://localhost:8000)..." -ForegroundColor Green
-$backendScript = {
-    & .\backend\ForkVenv\Scripts\Activate.ps1
-    Write-Host ""
-    Write-Host "Backend server is starting..." -ForegroundColor Green
-    Write-Host "API Docs: http://localhost:8000/docs" -ForegroundColor Cyan
-    Write-Host ""
-    & uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+# Auto-setup backend environment if missing
+if (-not $venvPython) {
+    Write-Host "Backend virtual environment missing. Running setup.ps1..." -ForegroundColor Yellow
+    & "$PSScriptRoot\setup.ps1"
+    $venvPython = Get-VenvPython (Join-Path $PSScriptRoot "backend\ForkVenv")
 }
 
-$backendJob = Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendScript -PassThru
+if (-not $venvPython) {
+    Write-Host "Error: backend virtual environment could not be located after setup." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
+# Start Backend
+Write-Host "[1/2] Starting Backend (FastAPI on http://localhost:8000)..." -ForegroundColor Green
+$backendCommand = "& '$venvPython' -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
+$backendJob = Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCommand -PassThru
 Write-Host "Backend started (PID: $($backendJob.Id))" -ForegroundColor Green
 
 # Wait a moment for backend to start

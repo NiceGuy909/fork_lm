@@ -19,6 +19,18 @@ export function PromptBar({
     await onSend(value);
   }
 
+  const formBg = isDarkMode ? "#0F1419" : "#FFFFFF";
+  const formBorder = isDarkMode ? "#2D3548" : "#E5E7EB";
+  const inputBg = isDarkMode ? "#16192B" : "#F9FAFB";
+  const inputColor = isDarkMode ? "#E4E4E7" : "#1F2937";
+  const inputBorder = isDarkMode ? "#3A3F51" : "#D1D5DB";
+  const inputFocusBorder = isDarkMode ? "#A78BFA" : "#7C3AED";
+  const inputFocusBg = isDarkMode ? "#1A1F3A" : "#FFFFFF";
+  const accentColor = isDarkMode ? "#A78BFA" : "#7C3AED";
+  const accentHover = isDarkMode ? "#8B5CF6" : "#6D28D9";
+  const btnDisabledBg = isDarkMode ? "#3A3F51" : "#D1D5DB";
+  const btnDisabledColor = isDarkMode ? "#8B8B8B" : "#9CA3AF";
+
   return (
     <form 
       onSubmit={handleSubmit} 
@@ -26,8 +38,8 @@ export function PromptBar({
         display: "flex", 
         gap: 12, 
         padding: "16px 24px",
-        backgroundColor: "#0F1419",
-        borderTop: "1px solid #2D3548",
+        backgroundColor: formBg,
+        borderTop: `1px solid ${formBorder}`,
         alignItems: "center",
       }}
     >
@@ -39,9 +51,9 @@ export function PromptBar({
         style={{ 
           flex: 1, 
           padding: "11px 14px",
-          backgroundColor: "#16192B",
-          color: "#E4E4E7",
-          border: "1px solid #3A3F51",
+          backgroundColor: inputBg,
+          color: inputColor,
+          border: `1px solid ${inputBorder}`,
           borderRadius: "8px",
           fontSize: "15px",
           fontFamily: "inherit",
@@ -52,13 +64,13 @@ export function PromptBar({
         }}
         onFocus={(e) => {
           if (!isLoading) {
-            e.currentTarget.style.borderColor = "#A78BFA";
-            e.currentTarget.style.backgroundColor = "#1A1F3A";
+            e.currentTarget.style.borderColor = inputFocusBorder;
+            e.currentTarget.style.backgroundColor = inputFocusBg;
           }
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = "#3A3F51";
-          e.currentTarget.style.backgroundColor = "#16192B";
+          e.currentTarget.style.borderColor = inputBorder;
+          e.currentTarget.style.backgroundColor = inputBg;
         }}
       />
       <button 
@@ -66,8 +78,8 @@ export function PromptBar({
         disabled={isLoading}
         style={{
           padding: "11px 20px",
-          backgroundColor: isLoading ? "#3A3F51" : "#A78BFA",
-          color: isLoading ? "#8B8B8B" : "#FFFFFF",
+          backgroundColor: isLoading ? btnDisabledBg : accentColor,
+          color: isLoading ? btnDisabledColor : "#FFFFFF",
           border: "none",
           borderRadius: "8px",
           fontSize: "15px",
@@ -80,13 +92,13 @@ export function PromptBar({
         }}
         onMouseEnter={(e) => {
           if (!isLoading) {
-            e.currentTarget.style.backgroundColor = "#8B5CF6";
+            e.currentTarget.style.backgroundColor = accentHover;
             e.currentTarget.style.opacity = "0.9";
           }
         }}
         onMouseLeave={(e) => {
           if (!isLoading) {
-            e.currentTarget.style.backgroundColor = "#A78BFA";
+            e.currentTarget.style.backgroundColor = accentColor;
             e.currentTarget.style.opacity = "1";
           }
         }}

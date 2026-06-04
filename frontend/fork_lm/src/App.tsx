@@ -11,14 +11,22 @@ export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [, setRefreshKey] = useState(0);
   const [currentView, setCurrentView] = useState<"chat" | "tree">("tree");
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const saved = localStorage.getItem("forklm_dark_mode");
+  return saved !== null ? saved === "true" : true;
+});
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
 
   console.log("App rendered - selectedChatId:", selectedChatId, "currentView:", currentView);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+    localStorage.setItem("forklm_dark_mode", String(isDarkMode));
+  }, [isDarkMode]);
 
   useEffect(() => {
     // Load API key on mount
@@ -101,7 +109,7 @@ export default function App() {
       flexDirection: "column", 
       height: "100vh", 
       width: "100vw", 
-      backgroundColor: "#0A0E27"
+      backgroundColor: "var(--bg)"
     }}>
       <Navbar 
         currentView={currentView} 
@@ -126,7 +134,7 @@ export default function App() {
           isDarkMode={isDarkMode}
         />
 
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0, width: "100%", backgroundColor: "#0A0E27" }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0, width: "100%", backgroundColor: "var(--bg)" }}>
           {selectedChatId && currentView === "chat" && (
             <>
               <ChatView
@@ -151,7 +159,7 @@ export default function App() {
             </div>
           )}
           {!selectedChatId && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "#8B8B8B" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "var(--text)" }}>
               Select or create a chat to begin
             </div>
           )}

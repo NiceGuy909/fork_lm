@@ -2,10 +2,10 @@
 
 .chat-list-container {
   width: 260px;
-  border-right: 1px solid #2D3548;
+  border-right: 1px solid #E5E7EB;
   padding: 16px 12px;
   overflow-y: auto;
-  background: #0F1419;
+  background: #F9FAFB;
   min-width: 260px;
   flex-shrink: 0;
   display: flex;
@@ -16,20 +16,20 @@
 .chat-list-title {
   font-size: 11px;
   font-weight: 700;
-  color: #8B8B8B;
+  color: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   padding: 12px 8px;
   margin-bottom: 8px;
-  border-bottom: 1px solid #2D3548;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .new-chat-button {
   width: 100%;
   padding: 11px 14px;
   background: transparent;
-  color: #E4E4E7;
-  border: 1px solid #3A3F51;
+  color: #374151;
+  border: 1px solid #D1D5DB;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
@@ -43,9 +43,9 @@
 }
 
 .new-chat-button:hover {
-  background: rgba(167, 139, 250, 0.1);
-  border-color: #A78BFA;
-  color: #A78BFA;
+  background: rgba(124, 58, 237, 0.1);
+  border-color: #7C3AED;
+  color: #7C3AED;
 }
 
 .new-chat-button:active {
@@ -77,7 +77,7 @@
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #B4B4B4;
+  color: #6B7280;
   transition: all 0.2s ease;
   font-weight: 400;
   white-space: nowrap;
@@ -86,23 +86,23 @@
 }
 
 .chat-item-button:hover {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.2);
-  color: #E4E4E7;
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.2);
+  color: #374151;
 }
 
 .chat-item-button.active {
-  background: rgba(167, 139, 250, 0.15);
-  color: #A78BFA;
-  border-color: #A78BFA;
+  background: rgba(124, 58, 237, 0.15);
+  color: #7C3AED;
+  border-color: #7C3AED;
   font-weight: 500;
-  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.2);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2);
 }
 
 .chat-delete-button {
   padding: 8px 10px;
   background: transparent;
-  color: #8B8B8B;
+  color: #9CA3AF;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -136,82 +136,46 @@
 }
 
 .chat-list-items::-webkit-scrollbar-thumb:hover {
-  background: #4A4F61;
-}
-  font-size: 12px;
-  transition: all 0.3s ease;
-  min-width: 36px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(245, 87, 108, 0.2);
-}
-
-.chat-delete-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(245, 87, 108, 0.3);
-}
-
-.chat-delete-button:active {
-  transform: scale(0.95);
-}
-
-/* Scrollbar styling */
-.chat-list-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chat-list-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.chat-list-container::-webkit-scrollbar-thumb {
-  background: #bbb;
-  border-radius: 10px;
-}
-
-.chat-list-container::-webkit-scrollbar-thumb:hover {
-  background: #888;
+  background: #9CA3AF;
 }
 
 /* Dark Mode Styles */
 .chat-list-container.dark-theme {
-  background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-  border-right-color: #3a3a3a;
+  background: #0F1419;
+  border-right-color: #2D3548;
 }
 
 .chat-list-container.dark-theme .chat-list-title {
-  color: #b0b0b0;
-  border-bottom-color: #3a3a3a;
+  color: #8B8B8B;
+  border-bottom-color: #2D3548;
 }
 
 .chat-list-container.dark-theme .chat-item-button {
-  background: #2a2a2a;
-  border-color: #3a3a3a;
-  color: #e0e0e0;
+  background: transparent;
+  border-color: transparent;
+  color: #B4B4B4;
 }
 
 .chat-list-container.dark-theme .chat-item-button:hover {
-  border-color: #5a5a5a;
-  background: #353535;
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.2);
+  color: #E4E4E7;
 }
 
 .chat-list-container.dark-theme .chat-item-button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
+  border-color: #A78BFA;
 }
 
 .chat-list-container.dark-theme::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: transparent;
 }
 
 .chat-list-container.dark-theme::-webkit-scrollbar-thumb {
-  background: #5a5a5a;
+  background: #3A3F51;
 }
 
 .chat-list-container.dark-theme::-webkit-scrollbar-thumb:hover {
-  background: #7a7a7a;
+  background: #4A4F61;
 }
